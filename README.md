@@ -3,6 +3,6 @@
 
 **Instructions:**
 
-1- Download er-coap
+1- Download er-coap folder
 
 2- Replace the folder in contiki/apps
