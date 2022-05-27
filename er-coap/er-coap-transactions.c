@@ -89,14 +89,17 @@ coap_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
 void
 coap_send_transaction(coap_transaction_t *t)
 {
-  PRINTF("Sending transaction %u\n", t->mid);
+  if (t->retrans_counter < COAP_MAX_RETRANSMIT+1) {
 
-  coap_send_message(&t->addr, t->port, t->packet, t->packet_len);
+    PRINTF("Sending transaction %u\n", t->mid);
+
+    coap_send_message(&t->addr, t->port, t->packet, t->packet_len);
+  }
 
   if(COAP_TYPE_CON ==
      ((COAP_HEADER_TYPE_MASK & t->packet[0]) >> COAP_HEADER_TYPE_POSITION)) {
     if(t->retrans_counter < COAP_MAX_RETRANSMIT+1) {
-      /* not timed out yet */
+      /* All not timed out yet */
       PRINTF("Keeping transaction %u\n", t->mid);
 
       if(t->retrans_counter == 0) {
@@ -119,8 +122,8 @@ coap_send_transaction(coap_transaction_t *t)
 
       t = NULL;
     } else {
-      /* timed out */
-      PRINTF("Timeout\n");
+      /* All timed out */
+      PRINTF("CoAP Loss\n");
       restful_response_handler callback = t->callback;
       void *callback_data = t->callback_data;
 
@@ -171,7 +174,7 @@ coap_check_transactions()
   for(t = (coap_transaction_t *)list_head(transactions_list); t; t = t->next) {
     if(etimer_expired(&t->retrans_timer)) {
       ++(t->retrans_counter);
-      PRINTF("Retransmitting %u (%u)\n", t->mid, t->retrans_counter);
+      PRINTF("Attempting to retransmit %u (%u)\n", t->mid, t->retrans_counter);
       coap_send_transaction(t);
     }
   }
